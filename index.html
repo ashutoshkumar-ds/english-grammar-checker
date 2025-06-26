@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Grammar Correction</title>
+</head>
+<body>
+  <h2>🎙 Speak a sentence:</h2>
+  <button onclick="startRecognition()">Start Speaking</button>
+  <p id="output">Your sentence appears here...</p>
+
+  <button onclick="sendToServer()">Check Grammar</button>
+  <p id="status" style="color: blue;"></p>
+  <p id="feedback">Feedback will show here...</p>
+
+  <script>
+    let transcript = "";
+    const output = document.getElementById("output");
+
+    function startRecognition() {
+      const recognition = new webkitSpeechRecognition();
+      recognition.lang = "en-IN";
+      recognition.onresult = function(event) {
+        transcript = event.results[0][0].transcript;
+        output.textContent = transcript;
+        document.getElementById("status").textContent = "✅ Speech captured. Ready to check grammar.";
+      };
+      recognition.start();
+    }
+
+    async function sendToServer() {
+      document.getElementById("status").textContent = "⏳ Sending request...";
+      console.log("Sending request to: http://127.0.0.1:5000/analyze");
+
+      try {
+        const res = await fetch('http://127.0.0.1:5000/analyze', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ text: transcript })
+        });
+
+        if (!res.ok) {
+          document.getElementById("status").textContent = "❌ Error: Could not connect to backend.";
+          return;
+        }
+
+        const data = await res.json();
+        document.getElementById("feedback").innerHTML = data.feedback;
+        document.getElementById("status").textContent = "✅ Done.";
+        console.log("Response:", data);
+
+      } catch (error) {
+        console.error(error);
+        document.getElementById("status").textContent = "❌ Something went wrong.";
+      }
+    }
+  </script>
+</body>
+</html>
