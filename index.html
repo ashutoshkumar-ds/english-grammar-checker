@@ -17,15 +17,46 @@
     const output = document.getElementById("output");
 
     function startRecognition() {
-      const recognition = new webkitSpeechRecognition();
-      recognition.lang = "en-IN";
-      recognition.onresult = function(event) {
-        transcript = event.results[0][0].transcript;
-        output.textContent = transcript;
-        document.getElementById("status").textContent = "✅ Speech captured. Ready to check grammar.";
-      };
-      recognition.start();
-    }
+        const recognition = new webkitSpeechRecognition();
+        recognition.lang = "en-IN";
+        recognition.continuous = true;
+        recognition.interimResults = false;
+
+        let finalTranscript = "";
+        let silenceTimer;
+
+        recognition.onresult = function(event) {
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript + " ";
+            }
+            }
+            transcript = finalTranscript.trim();
+            document.getElementById("output").textContent = transcript;
+
+            // Reset and restart silence timer
+            clearTimeout(silenceTimer);
+            silenceTimer = setTimeout(() => {
+            recognition.stop();
+            document.getElementById("status").textContent = "✅ Speech captured. Ready to check grammar.";
+            }, 5000); // 5 seconds of silence
+        };
+
+        recognition.onerror = function(event) {
+            console.error("Speech recognition error:", event.error);
+            document.getElementById("status").textContent = "❌ Speech recognition failed.";
+        };
+
+        recognition.onend = function() {
+            if (transcript === "") {
+            document.getElementById("status").textContent = "⚠️ No speech detected.";
+            }
+        };
+
+        recognition.start();
+        document.getElementById("status").textContent = "🎙 Listening... (will auto-stop after 5s silence)";
+        }
+
 
     async function sendToServer() {
       document.getElementById("status").textContent = "⏳ Sending request...";
