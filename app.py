@@ -7,6 +7,7 @@ CORS(app)
 
 openai.api_key = "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"  # Use your valid OpenAI API key
 
+
 @app.route('/analyze', methods=['POST'])
 def analyze():
     try:
@@ -14,13 +15,29 @@ def analyze():
         print("Received:", text)
 
         response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",  # Or gpt-4
+            model="gpt-3.5-turbo",
             temperature=0,
-            messages=[{"role": "user", "content": f"Check this sentence for grammar. Be brutally honest. Highlight mistakes and correct them:\n\n{text}"}]
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a strict English teacher. You must be brutally honest. "
+                        "If the sentence is grammatically incorrect, say so and provide the corrected version. "
+                        "If the sentence does not make sense, say '❌ The sentence is unclear or incorrect.' "
+                        "Then suggest a corrected version that conveys a meaningful idea. "
+                        "Do not praise correct sentences. Never skip over mistakes."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"The sentence is: {text}"
+                }
+            ]
         )
 
         feedback = response.choices[0].message.content
         return jsonify({"feedback": feedback})
+
     except Exception as e:
         print("❌ ERROR:", e)
         return jsonify({"feedback": "Server error occurred."}), 500
